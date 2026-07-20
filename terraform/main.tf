@@ -1,14 +1,93 @@
-terraform {
-  required_version = ">= 1.5"
-
-  required_providers {
-    libvirt = {
-      source  = "dmacvicar/libvirt"
-      version = "~> 0.9"
+locals {
+  nodes = {
+    cp = {
+      ip = "192.168.122.10"
+      mac    = "52:54:00:00:00:10"
+      memory = 4096
+      vcpu   = 4
+      disk   = 2
+    }
+    worker1 = {
+      ip = "192.168.122.11"
+      mac    = "52:54:00:00:00:11"
+      memory = var.vm_memory
+      vcpu   = var.vm_vcpu
+    }
+    worker2 = {
+      ip = "192.168.122.12"
+      mac    = "52:54:00:00:00:12"
+      memory = var.vm_memory
+      vcpu   = var.vm_vcpu
     }
   }
 }
 
-provider "libvirt" {
-  uri = var.libvirt_uri
+resource "libvirt_volume" "base" {
+  name   = "base-image"
+  pool   = libvirt_pool.k8s.name
+  source = var.base_image
+  format = "qcow2"
+}
+
+resource "libvirt_volume" "disk" {
+  for_each       = local.nodes
+
+  name           = "${each.key}.qcow2"
+  pool           = libvirt_pool.k8s.name
+  base_volume_id = libvirt_volume.base.id
+  size = var.vm_disk_size_gb * 1024 * 1024 * 1024
+}
+
+resource "libvirt_cloudinit_disk" "commoninit" {
+  for_each = local.nodes
+
+  name = "${each.key}-cloudinit.iso"
+  pool = libvirt_pool.k8s.name
+
+  user_data = templatefile("${path.module}/cloud_init.cfg", {
+    hostname = each.key
+    ssh_key  = var.ssh_public_key
+  })
+
+  network_config = templatefile("${path.module}/network_config.cfg", {
+    ip = each.value.ip
+    mac = each.value.mac
+  })
+}
+
+resource "libvirt_domain" "vm" {
+  for_each = local.nodes
+
+  name   = each.key
+  memory = each.value.memory
+  vcpu   = each.value.vcpu
+  autostart = true
+  qemu_agent = true
+
+  cloudinit = libvirt_cloudinit_disk.commoninit[each.key].id
+
+  cpu {
+    mode = "host-passthrough"
+  }
+
+  disk {
+    volume_id = libvirt_volume.disk[each.key].id
+  }
+
+  network_interface {
+    network_name   = libvirt_network.k8s.name
+    mac            = each.value.mac
+    wait_for_lease = false # we used static IP and no need terraform wait for libvirt DHCP
+  }
+
+  console {
+    type        = "pty"
+    target_port = "0"
+    target_type = "serial"
+  }
+
+  graphics {
+    type = "spice"
+    autoport = true
+  }
 }
