@@ -1,0 +1,36 @@
+---
+- name: Download Kubernetes GPG Key
+  ansible.builtin.get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key
+    dest: /etc/apt/keyrings/kubernetes-archive-keyring.asc
+    mode: '0644'
+
+- name: Add Kubernetes APT Repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /"
+    state: present
+    filename: kubernetes
+
+- name: Install Kubernetes components
+  ansible.builtin.apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+    update_cache: true
+
+- name: Hold Kubernetes packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl
+
+- name: Enable and start kubelet service
+  ansible.builtin.systemd:
+    name: kubelet
+    state: started
+    enabled: true

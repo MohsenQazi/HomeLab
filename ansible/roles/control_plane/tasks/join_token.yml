@@ -1,0 +1,14 @@
+---
+
+- name: Generate join command
+  command:
+    cmd: kubeadm token create --ttl 24h --print-join-command
+  register: join_command
+  changed_when: false
+
+- name: Share join command
+  set_fact:
+    k8s_join_command: "{{ join_command.stdout }}"
+  delegate_to: "{{ item }}"
+  delegate_facts: true
+  loop: "{{ groups['workers'] }}"

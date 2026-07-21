@@ -1,0 +1,38 @@
+---
+
+- name: Add Cilium repo
+  command: >
+    helm repo add cilium https://helm.cilium.io
+
+- name: Update repos
+  command: helm repo update
+
+- name: Copy values
+  template:
+    src: cilium-values.yaml.j2
+    dest: /tmp/cilium-values.yaml
+
+- name: Install Cilium
+  command: >
+    helm upgrade
+    --install
+    cilium
+    cilium/cilium
+    --namespace kube-system
+    --version {{ cilium_version }}
+    -f /tmp/cilium-values.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: Wait Cilium rollout
+  command: >
+    kubectl rollout status
+    daemonset/cilium
+    -n kube-system
+    --timeout=60s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: rollout
+  retries: 5
+  delay: 10
+  until: rollout.rc == 0

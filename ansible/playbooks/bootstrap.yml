@@ -1,0 +1,7 @@
+---
+- name: Bootstrap Operating System and Container Runtime
+  hosts: k8s_cluster
+  become: true
+  roles:
+    - common
+    - containerd

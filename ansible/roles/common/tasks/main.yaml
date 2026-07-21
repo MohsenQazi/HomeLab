@@ -1,0 +1,117 @@
+---
+- name: Disable SWAP (Kubernetes requirement)
+  ansible.builtin.shell: |
+    swapoff -a
+  changed_when: false
+
+- name: Disable SWAP in fstab (Permanent)
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+.*)$'
+    replace: '# \1'
+
+- name: Create sysctl and k8s modules configuration file
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+    mode: '0644'
+
+- name: Load kernel modules
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: Set system-level network parameters for Passthrough
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: '1'
+    sysctl_file: /etc/sysctl.d/k8s.conf
+    state: present
+    reload: true
+  loop:
+    - net.bridge.bridge-nf-call-iptables
+    - net.bridge.bridge-nf-call-ip6tables
+    - net.ipv4.ip_forward
+
+- name: Install baseline OS packages
+  ansible.builtin.package:
+    name:
+      - curl
+      - apt-transport-https
+      - ca-certificates
+      - socat
+      - ebtables
+      - gnupg
+    state: present
+    update_cache: true
+- name: Disable SWAP (Kubernetes requirement)
+  ansible.builtin.shell: |
+    swapoff -a
+  changed_when: false
+
+- name: Disable SWAP in fstab (Permanent)
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+.*)$'
+    replace: '# \1'
+
+- name: Create sysctl and k8s modules configuration file
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+    mode: '0644'
+
+- name: Load kernel modules
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: Set system-level network parameters for Passthrough
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: '1'
+    sysctl_file: /etc/sysctl.d/k8s.conf
+    state: present
+    reload: true
+  loop:
+    - net.bridge.bridge-nf-call-iptables
+    - net.bridge.bridge-nf-call-ip6tables
+    - net.ipv4.ip_forward
+
+- name: Install baseline OS packages
+  ansible.builtin.package:
+    name:
+      - curl
+      - apt-transport-https
+      - ca-certificates
+      - socat
+      - ebtables
+      - gnupg
+    state: present
+    update_cache: true
+
+- name: Configure APT proxy settings
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/99proxy
+    content: |
+      Acquire::http::Proxy "http://{{ proxy_host }}:{{ proxy_port }}/";
+      Acquire::https::Proxy "http://{{ proxy_host }}:{{ proxy_port }}/";
+    mode: '0644'
+
+- name: Configure APT to use Apt-Cacher-NG server on hypervisor
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/00aptproxy
+    content: |
+      Acquire::http::Proxy "http://{{ apt_cache_server_ip }}:3142";
+    mode: '0644'
+  when: use_apt_cache | default(true)

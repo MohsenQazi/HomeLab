@@ -1,0 +1,23 @@
+---
+
+- name: Check if cluster already initialized
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubeadm_initialized
+
+- name: Generate kubeadm defaults
+  command:
+    cmd: kubeadm config print init-defaults
+  register: kubeadm_defaults
+  changed_when: false
+  when: not kubeadm_initialized.stat.exists
+
+- name: Extract kubeadm apiVersion
+  set_fact:
+    kubeadm_api_version: >-
+      {{
+        kubeadm_defaults.stdout
+        | regex_search('apiVersion: ([^\n]+)', '\1')
+        | first
+      }}
+  when: not kubeadm_initialized.stat.exists

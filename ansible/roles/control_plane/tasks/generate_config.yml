@@ -1,0 +1,7 @@
+---
+
+- name: Generate kubeadm configuration
+  template:
+    src: kubeadm-patch.yaml.j2
+    dest: /tmp/kubeadm-config.yaml
+  when: not kubeadm_initialized.stat.exists

@@ -1,0 +1,29 @@
+apiVersion: {{ kubeadm_api_version }}
+
+kind: InitConfiguration
+
+# to use eBPF in cilium instead of kube-proxy
+skipPhases:
+  - addon/kube-proxy
+
+---
+
+apiVersion: {{ kubeadm_api_version }}
+
+kind: ClusterConfiguration
+
+clusterName: {{ cluster_name }}
+
+networking:
+
+  serviceSubnet: {{ service_cidr }}
+
+  podSubnet: {{ cluster_cidr }}
+
+---
+
+apiVersion: kubelet.config.k8s.io/v1beta1
+
+kind: KubeletConfiguration
+
+cgroupDriver: systemd

@@ -1,0 +1,17 @@
+---
+
+- name: Check joined
+  stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet
+
+- name: Join cluster
+  command: "{{ k8s_join_command }}"
+  when:
+    - not kubelet.stat.exists
+    - k8s_join_command is defined
+
+- name: Wait kubelet
+  service:
+    name: kubelet
+    state: started

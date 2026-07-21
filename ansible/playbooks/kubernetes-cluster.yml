@@ -1,0 +1,20 @@
+---
+- name: Install Kubernetes Components on All Nodes
+  hosts: k8s_cluster
+  become: true
+  roles:
+    - kubernetes
+
+- name: Initialize Control Plane Node
+  hosts: control_plane
+  become: true
+  roles:
+    - helm
+    - control_plane
+    - cni
+
+- name: Join Worker Nodes to Cluster
+  hosts: workers
+  become: true
+  roles:
+    - worker

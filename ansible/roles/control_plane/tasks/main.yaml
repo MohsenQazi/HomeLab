@@ -1,0 +1,11 @@
+---
+
+- import_tasks: detect_kubeadm.yml
+
+- import_tasks: generate_config.yml
+
+- import_tasks: init_cluster.yml
+
+- import_tasks: kubeconfig.yml
+
+- import_tasks: join_token.yml
