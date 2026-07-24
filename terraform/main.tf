@@ -3,21 +3,26 @@ locals {
     cp = {
       ip = "192.168.122.10"
       mac    = "52:54:00:00:00:10"
-      memory = 4096
-      vcpu   = 4
-      disk   = 2
+      memory = 2048
+      vcpu   = 2
+      disk   = 20
+      secondary   = 40
     }
     worker1 = {
       ip = "192.168.122.11"
       mac    = "52:54:00:00:00:11"
-      memory = var.vm_memory
-      vcpu   = var.vm_vcpu
+      memory = 4096
+      vcpu   = 2
+      disk   = 20
+      secondary   = 50
     }
     worker2 = {
       ip = "192.168.122.12"
       mac    = "52:54:00:00:00:12"
-      memory = var.vm_memory
-      vcpu   = var.vm_vcpu
+      memory = 4096
+      vcpu   = 2
+      disk   = 20
+      secondary   = 50
     }
   }
 }
@@ -35,7 +40,16 @@ resource "libvirt_volume" "disk" {
   name           = "${each.key}.qcow2"
   pool           = libvirt_pool.k8s.name
   base_volume_id = libvirt_volume.base.id
-  size = var.vm_disk_size_gb * 1024 * 1024 * 1024
+  size = each.value.disk * 1024 * 1024 * 1024
+}
+
+resource "libvirt_volume" "data_disk" {
+  for_each = local.nodes
+
+  name = "${each.key}-data.qcow2"
+  pool = libvirt_pool.k8s.name
+  format = "qcow2"
+  size = each.value.secondary * 1024 * 1024 * 1024
 }
 
 resource "libvirt_cloudinit_disk" "commoninit" {
@@ -74,10 +88,14 @@ resource "libvirt_domain" "vm" {
     volume_id = libvirt_volume.disk[each.key].id
   }
 
+  disk {
+    volume_id = libvirt_volume.data_disk[each.key].id
+  }
+
   network_interface {
     network_name   = libvirt_network.k8s.name
     mac            = each.value.mac
-    wait_for_lease = false # we used static IP and no need terraform wait for libvirt DHCP
+    wait_for_lease = false # we use static IP and no need terraform wait for libvirt DHCP
   }
 
   console {

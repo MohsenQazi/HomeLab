@@ -22,5 +22,9 @@ ${name} ansible_host=${node.ip}
 [k8s_cluster:children]
 control_plane
 workers
+
+[all:vars]
+ansible_user=debian
+ansible_become=true
 EOT
 }
