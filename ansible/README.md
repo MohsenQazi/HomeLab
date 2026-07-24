@@ -7,3 +7,7 @@ To automate provisioning of a production-ready k8s cluster.
 * **Container Runtime Setup:** Containerd configuration with `systemd` cgroup driver alignment.
 * **Declarative Package Management:** Helm chart deployment integrated natively into the provisioning workflow.
 * **Decoupled Architecture:** Modular role structure separating runtime, control plane initialization, CNI installation, and node joining.
+
+
+### To Do
+- [ ] playbooks for adding a new node to the cluster.
