@@ -1,0 +1,21 @@
+---
+- name: ArgoCD for GitOps
+  hosts: control_plane
+  gather_facts: false
+  vars:
+    argocd_namespace: argocd
+    argocd_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+  tasks:
+    - name: Create argocd namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ argocd_namespace }}"
+        state: present
+
+    - name: Install ArgoCD
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ argocd_manifest_url }}"
+        namespace: "{{ argocd_namespace }}"

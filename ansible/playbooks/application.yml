@@ -1,0 +1,6 @@
+---
+- name: Deploy from git via ArgoCD
+  hosts: control_plane
+  gather_facts: false
+  roles:
+    - gitApp
