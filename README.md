@@ -69,4 +69,6 @@ flowchart TB
  2. Modifying apt-cacher-ng configuration `acng.conf`:
 	- Allow https requests for repos without http `AllowUserPorts: 80 443` .
 	- Publish just on the overlay network `BindAddress: 192.168.122.1` . `192.168.122.1` is IP of the virtual bridge on hypervisor to which the VMs (k8s nodes) are connected; And usually used as GW for the VMs.
+	- Make sure of `Remap`s which prevent duplicate repositories with different hostnames.
  3. Client-side changes will be applied for Linux machines via cloud-init and for K8S repos via relevant ansible roles.
+	* Also make sure the repos are accessible to the hypervisor.
