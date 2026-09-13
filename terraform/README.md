@@ -1,6 +1,6 @@
-### Requirments (Tested on debian trixie)                                   
-                                                                              
-- hypervisor
+### Hypervisor Requirments (Tested on debian 13.6)
+
+- Tools/Packages
     `qemu-system-x86 qemu-utils libvirt-daemon-system libvirt-clients virtinst bridge-utils`
 
 - To create VMs with non-root user
@@ -8,13 +8,14 @@
 
 - And prune libvirt's default network and pool.
 
-### Set local registry for Images
-In the case of access restrictions, it is a good idea to have images locally:
-1. Download images to /opt/terraform-providers
+### Local Registry
+To avoid issues caused by access restrictions, it is good practice to pre-pull images and store them locally.
+
+ 1. Download images to /opt/terraform-providers via `proxychains`, `export http_proxy=....` or any other solution you may know.
 ```
-proxychains terraform providers mirror /opt/terraform-providers
+terraform providers mirror /opt/terraform-providers
 ```
-2. ~/.terraformrc
+ 2. ~/.terraformrc
 ```
 provider_installation {                                                   
   filesystem_mirror {                                                     
