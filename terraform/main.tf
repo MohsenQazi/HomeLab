@@ -1,7 +1,10 @@
 locals {
+  gateway_ip     = cidrhost(var.network_cidr, 1)
+  network_prefix = split("/", var.network_cidr)[1]
+
   nodes = {
     cp = {
-      ip = "192.168.122.10"
+      ip = cidrhost(var.network_cidr, 10)
       mac    = "52:54:00:00:00:10"
       memory = 2048
       vcpu   = 2
@@ -9,7 +12,7 @@ locals {
       secondary   = 40
     }
     worker1 = {
-      ip = "192.168.122.11"
+      ip = cidrhost(var.network_cidr, 11)
       mac    = "52:54:00:00:00:11"
       memory = 4096
       vcpu   = 2
@@ -17,7 +20,7 @@ locals {
       secondary   = 50
     }
     worker2 = {
-      ip = "192.168.122.12"
+      ip = cidrhost(var.network_cidr, 12)
       mac    = "52:54:00:00:00:12"
       memory = 4096
       vcpu   = 2
@@ -59,13 +62,18 @@ resource "libvirt_cloudinit_disk" "commoninit" {
   pool = libvirt_pool.k8s.name
 
   user_data = templatefile("${path.module}/cloud_init.cfg", {
-    hostname = each.key
-    ssh_key  = var.ssh_public_key
+    hostname       = each.key
+    ssh_key        = var.ssh_public_key
+    apt_cache_host = local.gateway_ip
+    apt_cache_port = var.apt_cache_port
   })
 
   network_config = templatefile("${path.module}/network_config.cfg", {
-    ip = each.value.ip
-    mac = each.value.mac
+    ip             = each.value.ip
+    mac            = each.value.mac
+    prefix         = local.network_prefix
+    gateway        = local.gateway_ip
+    dns_secondary  = var.dns_secondary
   })
 }
 
